@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>上班时长双人对比</title>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<style>
+  :root {
+    --c-dark: #1f4e79;
+    --c-light: #8fb4cf;
+    --c-bg: #f4f7fa;
+    --c-card: #ffffff;
+    --c-text: #2b3a4a;
+    --c-sub: #7a8b9c;
+    --c-border: #e3eaf1;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--c-bg); color: var(--c-text); font-size: 15px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 14px 14px 70px; }
+  h1 { font-size: 20px; text-align: center; padding: 10px 0 4px; }
+  .sub { text-align: center; color: var(--c-sub); font-size: 12px; margin-bottom: 14px; }
+
+  .person-bar { display: flex; gap: 10px; margin-bottom: 14px; }
+  .person-btn { flex: 1; padding: 14px 8px; border-radius: 14px; border: 2px solid var(--c-border); background: #fff; font-size: 16px; font-weight: 600; color: var(--c-sub); cursor: pointer; transition: all .15s; }
+  .person-btn small { display: block; font-size: 11px; font-weight: 400; margin-top: 3px; }
+  .person-btn.activeA { border-color: var(--c-dark); background: var(--c-dark); color: #fff; }
+  .person-btn.activeA small { color: #cdddee; }
+  .person-btn.activeB { border-color: var(--c-light); background: var(--c-light); color: #fff; }
+  .person-btn.activeB small { color: #eef5fa; }
+
+  .card { background: var(--c-card); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(31,78,121,.07); }
+  .card h2 { font-size: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .card h2 .mini { font-size: 12px; color: var(--c-sub); font-weight: 400; cursor: pointer; }
+
+  .today-status { text-align: center; color: var(--c-sub); font-size: 13px; margin-bottom: 12px; line-height: 1.8; }
+  .today-status b { color: var(--c-text); font-size: 16px; }
+  .punch-row { display: flex; gap: 10px; }
+  .punch-btn { flex: 1; padding: 16px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; color: #fff; cursor: pointer; }
+  .punch-btn.in { background: var(--c-dark); }
+  .punch-btn.out { background: #4a7ba6; }
+  .punch-btn:disabled { background: #c5d2de; cursor: not-allowed; }
+  .punch-btn small { display: block; font-size: 11px; font-weight: 400; opacity: .85; margin-top: 2px; }
+
+  .form-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .form-row label { flex: 1; min-width: 100px; font-size: 12px; color: var(--c-sub); }
+  .form-row input { width: 100%; margin-top: 4px; padding: 9px 10px; border: 1px solid var(--c-border); border-radius: 8px; font-size: 15px; color: var(--c-text); background: #fff; }
+  .btn { padding: 10px 18px; border: none; border-radius: 10px; background: var(--c-dark); color: #fff; font-size: 14px; cursor: pointer; }
+  .btn.ghost { background: #eef3f8; color: var(--c-dark); }
+
+  table.cmp { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.cmp th, table.cmp td { padding: 9px 5px; text-align: center; border-bottom: 1px solid var(--c-border); }
+  table.cmp th { color: var(--c-sub); font-weight: 500; font-size: 12px; }
+  table.cmp td:first-child, table.cmp th:first-child { text-align: left; color: var(--c-sub); }
+  table.cmp td.a { color: var(--c-dark); font-weight: 600; }
+  table.cmp td.b { color: #5b87a8; font-weight: 600; }
+  td.win::after { content: " ▲"; font-size: 9px; color: #d98e4a; }
+
+  .rec-item { display: flex; align-items: center; padding: 9px 2px; border-bottom: 1px solid var(--c-border); font-size: 13px; gap: 6px; }
+  .rec-item .who { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
+  .rec-item .who.a { background: var(--c-dark); }
+  .rec-item .who.b { background: var(--c-light); }
+  .rec-item .date { width: 84px; flex-shrink: 0; }
+  .rec-item .times { flex: 1; }
+  .rec-item .dur { width: 54px; text-align: right; font-weight: 600; flex-shrink: 0; }
+  .rec-item .ops { flex-shrink: 0; display: flex; gap: 4px; }
+  .rec-item .ops button { border: none; background: #eef3f8; border-radius: 6px; padding: 4px 7px; font-size: 11px; color: var(--c-dark); cursor: pointer; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+  .tab { padding: 6px 14px; border-radius: 20px; font-size: 13px; background: #eef3f8; color: var(--c-sub); cursor: pointer; border: none; }
+  .tab.on { background: var(--c-dark); color: #fff; }
+
+  .chart { width: 100%; }
+  .tip { font-size: 11px; color: var(--c-sub); margin-top: 8px; line-height: 1.6; }
+  #toast { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); background: rgba(31,78,121,.93); color: #fff; font-size: 13px; padding: 8px 16px; border-radius: 20px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 99; max-width: 90%; text-align: center; }
+  #toast.show { opacity: 1; }
+  .loading { text-align: center; padding: 40px 0; color: var(--c-sub); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⏱ 上班时长双人对比</h1>
+  <div class="sub">云端同步 · 两人共用本链接<span id="netState"></span></div>
+
+  <div id="app" style="display:none">
+    <div class="person-bar">
+      <button class="person-btn" id="btnA" onclick="switchPerson('A')"><span id="nameA">我</span><small id="todayA"></small></button>
+      <button class="person-btn" id="btnB" onclick="switchPerson('B')"><span id="nameB">TA</span><small id="todayB"></small></button>
+    </div>
+
+    <div class="card">
+      <h2>今日打卡 <span class="mini" onclick="rename()">✏️ 改昵称</span></h2>
+      <div class="today-status" id="todayStatus"></div>
+      <div class="punch-row">
+        <button class="punch-btn in" id="punchIn" onclick="punch('in')">上班打卡<small id="inTime"></small></button>
+        <button class="punch-btn out" id="punchOut" onclick="punch('out')">下班打卡<small id="outTime"></small></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>手动补录 / 修正</h2>
+      <div class="form-row">
+        <label>日期<input type="date" id="fDate"></label>
+        <label>上班时间<input type="time" id="fStart"></label>
+        <label>下班时间<input type="time" id="fEnd"></label>
+      </div>
+      <button class="btn" onclick="saveManual()">保存到当前选中的人</button>
+    </div>
+
+    <div class="card">
+      <h2>数据对比</h2>
+      <div class="tabs">
+        <button class="tab on" onclick="setPeriod('week', this)">本周</button>
+        <button class="tab" onclick="setPeriod('month', this)">本月</button>
+        <button class="tab" onclick="setPeriod('all', this)">全部</button>
+      </div>
+      <table class="cmp" id="cmpTable"></table>
+      <div class="tip">▲ 表示该项领先（工时更少为"躺赢"，打卡更早为"卷赢"）。标准工时按每天 8h 计，超出部分计为加班。</div>
+    </div>
+
+    <div class="card">
+      <h2>近 14 天每日工时</h2>
+      <div id="chartDaily" class="chart"></div>
+    </div>
+    <div class="card">
+      <h2>上下班时间分布（近 30 天）</h2>
+      <div id="chartClock" class="chart"></div>
+      <div class="tip">圆点=上班时间，方块=下班时间。位置越高越晚。</div>
+    </div>
+
+    <div class="card">
+      <h2>历史记录 <span class="mini" id="recCount"></span></h2>
+      <div id="recList"></div>
+    </div>
+  </div>
+  <div class="loading" id="loading">正在加载云端数据…</div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ============ 云端存储配置 ============
+const REPO = 'laurajhlu/worktime-duo';
+const FILE = 'data.json';
+const API = 'https://api.github.com';
+// 密钥只存本机浏览器，永不上传
+const _tk = () => localStorage.getItem('wtd_token') || '';
+
+let SHA = null;
+let DATA = { cfg: { A: '我', B: 'TA' }, records: [] };
+let cur = localStorage.getItem('wtd_cur') || 'A';
+let period = 'week';
+let saving = false;
+const WORK_MIN = 8 * 60;
+
+function toast(msg, ms) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('show'), ms || 1600);
+}
+
+async function ghGet() {
+  const r = await fetch(`${API}/repos/${REPO}/contents/${FILE}?ref=main&t=${Date.now()}`, {
+    headers: { Authorization: 'Bearer ' + _tk(), Accept: 'application/vnd.github+json' },
+    cache: 'no-store'
+  });
+  if (r.status === 404) { SHA = null; return { cfg: { A: '我', B: 'TA' }, records: [] }; }
+  if (!r.ok) throw new Error('读取失败 ' + r.status);
+  const j = await r.json();
+  SHA = j.sha;
+  const txt = decodeURIComponent(escape(atob(j.content.replace(/\s/g, ''))));
+  return JSON.parse(txt);
+}
+
+async function ghPut(obj, msg) {
+  const body = {
+    message: msg ||'update',
+    content: btoa(unescape(encodeURIComponent(JSON.stringify(obj, null, 1)))),
+    branch: 'main'
+  };
+  if (SHA) body.sha = SHA;
+  const r = await fetch(`${API}/repos/${REPO}/contents/${FILE}`, {
+    method: 'PUT',
+    headers: { Authorization: 'Bearer ' + _tk(), Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (r.status === 409 || r.status === 422) return'conflict';
+  if (!r.ok) throw new Error('保存失败 ' + r.status);
+  const j = await r.json();
+  SHA = j.content.sha;
+  return 'ok';
+}
+
+// 带冲突重试的提交：先拉最新，应用修改函数，再写回
+async function commit(mutate, msg) {
+  if (saving) { toast('正在保存，请稍候'); return false; }
+  saving = true;
+  try {
+    for (let i = 0; i < 4; i++) {
+      const fresh = await ghGet();
+      mutate(fresh);
+      const res = await ghPut(fresh, msg);
+      if (res === 'ok') { DATA = fresh; render(); toast('已同步 ✓'); return true; }
+      await new Promise(r => setTimeout(r, 700 * (i + 1)));
+    }
+    toast('保存冲突，请重试');
+    return false;
+  } catch (e) {
+    toast(e.message || '网络异常');
+    return false;
+  } finally { saving = false; }
+}
+
+async function refresh(silent) {
+  if (!_tk()) {
+    document.getElementById('loading').innerHTML = '需要访问密钥才能同步数据<br><br><button class="btn" onclick="askToken()">输入密钥</button>';
+    return;
+  }
+  try {
+    DATA = await ghGet();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = '';
+    render();
+    document.getElementById('netState').textContent = '';
+    if (!silent) toast('已刷新 ✓');
+  } catch (e) {
+    document.getElementById('netState').textContent = '· 离线';
+    if (!silent) toast('刷新失败：' + e.message);
+    if (document.getElementById('app').style.display === 'none') {
+      const bad = /40[13]/.test(e.message);
+      document.getElementById('loading').innerHTML = (bad ? '密钥无效或已过期' : '加载失败：' + e.message) +
+        '<br><br><button class="btn" onclick="askToken()">重新输入密钥</button>';
+    }
+  }
+}
+
+function askToken() {
+  const t = prompt('请粘贴访问密钥（只需输入一次，保存在本机浏览器）：', '');
+  if (!t || !t.trim()) { toast('未输入密钥'); return; }
+  localStorage.setItem('wtd_token', t.trim());
+  document.getElementById('loading').textContent = '正在加载云端数据…';
+  refresh();
+}
+
+// ============ 工具 ============
+function fmtDate(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function todayStr() { return fmtDate(new Date()); }
+function nowHM() { const d = new Date(); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
+function toMin(hm) { if(!hm) return null; const [h,m] = hm.split(':').map(Number); return h*60+m; }
+function durMin(r) { if(r.start==null||r.end==null) return null; let d = r.end - r.start; if(d < 0) d += 1440; return d; }
+function fmtDur(min) { if(min==null) return '--'; return (min/60).toFixed(1) + 'h'; }
+function fmtHM(min) { if(min==null) return '--'; min = Math.round(min); return String(Math.floor(min/60)).padStart(2,'0') + ':' + String(min%60).padStart(2,'0'); }
+function findRec(person, date) { return DATA.records.find(r => r.person === person && r.date === date); }
+
+function upsert(d, person, date, start, end) {
+  let r = d.records.find(x => x.person === person && x.date === date);
+  if (!r) { r = { person, date, start: null, end: null }; d.records.push(r); }
+  if (start !== undefined) r.start = start;
+  if (end !== undefined) r.end = end;
+}
+
+// ============ 操作 ============
+function punch(type) {
+  const t = todayStr(), m = toMin(nowHM());
+  commit(d => upsert(d, cur, t, type === 'in' ? m : undefined, type === 'out' ? m : undefined),
+         `${DATA.cfg[cur]} ${t} ${type === 'in' ? '上班' : '下班'} ${fmtHM(m)}`);
+}
+
+function saveManual() {
+  const dt = document.getElementById('fDate').value;
+  if (!dt) { toast('请选择日期'); return; }
+  const s = toMin(document.getElementById('fStart').value);
+  const e = toMin(document.getElementById('fEnd').value);
+  commit(d => upsert(d, cur, dt, s, e), `补录 ${DATA.cfg[cur]} ${dt}`);
+}
+
+function delRec(person, date) {
+  if (!confirm(`删除 ${DATA.cfg[person]} ${date} 的记录？`)) return;
+  commit(d => { d.records = d.records.filter(r => !(r.person === person && r.date === date)); },
+         `删除 ${DATA.cfg[person]} ${date}`);
+}
+
+function editRec(person, date) {
+  switchPerson(person);
+  const r = findRec(person, date);
+  document.getElementById('fDate').value = date;
+  document.getElementById('fStart').value = r && r.start != null ? fmtHM(r.start) : '';
+  document.getElementById('fEnd').value = r && r.end != null ? fmtHM(r.end) : '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function rename() {
+  const a = prompt('你的昵称：', DATA.cfg.A);
+  const b = prompt('TA 的昵称：', DATA.cfg.B);
+  if (!a && !b) return;
+  commit(d => {
+    if (a) d.cfg.A = a.trim().slice(0,8) || d.cfg.A;
+    if (b) d.cfg.B = b.trim().slice(0,8) || d.cfg.B;
+  }, '修改昵称');
+}
+
+function switchPerson(p) { cur = p; localStorage.setItem('wtd_cur', p); render(); }
+function setPeriod(p, el) {
+  period = p;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t === el));
+  renderCmp();
+}
+
+// ============ 统计 ============
+function inPeriod(dateStr) {
+  if (period === 'all') return true;
+  const d = new Date(dateStr + 'T00:00:00');
+  const now = new Date(); now.setHours(0,0,0,0);
+  if (period === 'week') {
+    const monday = new Date(now); monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    return d >= monday && d <= now;
+  }
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+}
+
+function stats(person) {
+  const recs = DATA.records.filter(r => r.person === person && inPeriod(r.date));
+  const full = recs.filter(r => durMin(r) != null);
+  const total = full.reduce((s, r) => s + durMin(r), 0);
+  const ot = full.reduce((s, r) => s + Math.max(0, durMin(r) - WORK_MIN), 0);
+  const starts = recs.filter(r => r.start != null).map(r => r.start);
+  const ends = recs.filter(r => r.end != null).map(r => r.end);
+  const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null;
+  return { days: full.length, total, ot,
+    avgDay: full.length ? total / full.length : null,
+    avgIn: avg(starts), avgOut: avg(ends),
+    latest: ends.length ? Math.max(...ends) : null };
+}
+
+function renderCmp() {
+  const c = DATA.cfg, A = stats('A'), B = stats('B');
+  const rows = [
+    ['打卡天数', A.days, B.days, v => v + ' 天', false],
+    ['总工时', A.total, B.total, fmtDur, true],
+    ['日均工时', A.avgDay, B.avgDay, fmtDur, true],
+    ['累计加班', A.ot, B.ot, fmtDur, true],
+    ['平均上班', A.avgIn, B.avgIn, fmtHM, true],
+    ['平均下班', A.avgOut, B.avgOut, fmtHM, true],
+    ['最晚下班', A.latest, B.latest, fmtHM, true],
+  ];
+  let html = `<tr><th>指标</th><th>${c.A}</th><th>${c.B}</th></tr>`;
+  for (const [label, va, vb, fmt, less] of rows) {
+    let ca = '', cb = '';
+    if (va != null && vb != null && va !== vb) {
+      const aWin = less ? va < vb : va > vb;
+      ca = aWin ? 'win' : ''; cb = aWin ? '' : 'win';
+    }
+    html += `<tr><td>${label}</td><td class="a ${ca}">${fmt(va)}</td><td class="b ${cb}">${fmt(vb)}</td></tr>`;
+  }
+  document.getElementById('cmpTable').innerHTML = html;
+}
+
+// ============ 图表 ============
+const C = { A: '#1f4e79', B: '#8fb4cf' };
+const baseLayout = {
+  font: { size: 13, color: '#2b3a4a' },
+  margin: { t: 10, r: 10, b: 45, l: 45 },
+  paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+  legend: { font: { size: 12 }, orientation: 'v', x: 1.02, y: 1 },
+};
+
+function renderCharts() {
+  const c = DATA.cfg, days = [];
+  for (let i = 13; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(fmtDate(d)); }
+  const series = p => days.map(d => { const r = findRec(p, d); const m = r ? durMin(r) : null; return m != null ? +(m/60).toFixed(2) : null; });
+  Plotly.react('chartDaily', [
+    { x: days, y: series('A'), name: c.A, type:'bar', marker: { color: C.A } },
+    { x: days, y: series('B'), name: c.B, type: 'bar', marker: { color: C.B } },
+  ], { ...baseLayout, barmode: 'group', yaxis: { title: '工时(h)', gridcolor: '#e3eaf1' }, xaxis: { tickangle: -45 } }, { responsive: true, displayModeBar: false });
+
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+  const cs = fmtDate(cutoff);
+  const pick = (p, f) => DATA.records.filter(r => r.person === p && r.date >= cs && r[f] != null);
+  const mk = (recs, f, sym, name, color) => ({
+    x: recs.map(r => r.date), y: recs.map(r => +(r[f]/60).toFixed(2)),
+    mode: 'markers', name, marker: { symbol: sym, size: 9, color } });
+  Plotly.react('chartClock', [
+    mk(pick('A','start'), 'start', 'circle', c.A+' 上班', C.A),
+    mk(pick('A','end'), 'end', 'square', c.A+' 下班', '#3a6a96'),
+    mk(pick('B','start'), 'start', 'circle', c.B+' 上班', C.B),
+    mk(pick('B','end'), 'end', 'square', c.B+' 下班', '#b8cdd9'),
+  ], { ...baseLayout, yaxis: { title: '时刻(h)', gridcolor: '#e3eaf1', range: [5, 26], dtick: 2 }, xaxis: { tickangle: -45 } }, { responsive: true, displayModeBar: false });
+}
+
+// ============ 渲染 ============
+function render() {
+  const c = DATA.cfg;
+  document.getElementById('nameA').textContent = c.A;
+  document.getElementById('nameB').textContent = c.B;
+  document.getElementById('btnA').className = 'person-btn' + (cur === 'A' ? ' activeA' : '');
+  document.getElementById('btnB').className = 'person-btn' + (cur === 'B' ? ' activeB' : '');
+
+  const t = todayStr();
+  const brief = r => r ? ((r.start != null ? fmtHM(r.start) + ' 上' : '') + (r.end != null ? ' / ' + fmtHM(r.end) + ' 下' : '')) || '未打卡' : '未打卡';
+  document.getElementById('todayA').textContent = brief(findRec('A', t));
+  document.getElementById('todayB').textContent = brief(findRec('B', t));
+
+  const r = findRec(cur, t), st = [];
+  if (r && r.start != null) st.push(`上班 <b>${fmtHM(r.start)}</b>`);
+  if (r && r.end != null) st.push(`下班 <b>${fmtHM(r.end)}</b>`);
+  if (r && durMin(r) != null) st.push(`已工作 <b>${fmtDur(durMin(r))}</b>`);
+  document.getElementById('todayStatus').innerHTML = st.length ? st.join(' · ') : '今天还没有打卡记录';
+  document.getElementById('inTime').textContent = r && r.start != null ? '已打 ' + fmtHM(r.start) : '';
+  document.getElementById('outTime').textContent = r && r.end != null ? '已打 ' + fmtHM(r.end) : '';
+  document.getElementById('punchIn').disabled = !!(r && r.start != null);
+  document.getElementById('punchOut').disabled = !(r && r.start != null) || !!(r && r.end != null);
+
+  if (!document.getElementById('fDate').value) document.getElementById('fDate').value = t;
+
+  const all = DATA.records.slice().sort((a, b) => b.date.localeCompare(a.date) || a.person.localeCompare(b.person));
+  document.getElementById('recCount').textContent = `共 ${all.length} 条`;
+  document.getElementById('recList').innerHTML = all.slice(0, 60).map(r => `
+    <div class="rec-item">
+      <div class="who ${r.person === 'A' ? 'a' : 'b'}"></div>
+      <div class="date">${r.date}</div>
+      <div class="times">${c[r.person]} ${r.start != null ? fmtHM(r.start) : '--'} → ${r.end != null ? fmtHM(r.end) : '--'}</div>
+      <div class="dur">${fmtDur(durMin(r))}</div>
+      <div class="ops"><button onclick="editRec('${r.person}','${r.date}')">改</button><button onclick="delRec('${r.person}','${r.date}')">删</button></div>
+    </div>`).join('') || '<div class="tip">暂无记录</div>';
+
+  renderCmp();
+  renderCharts();
+}
+
+async function setupToken() {
+  return !!_tk();
+}
+
+refresh(true);
+setInterval(() => { if (!saving && !document.hidden) refresh(true); }, 20000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(true); });
+</script>
+</body>
+</html>
