@@ -3,5 +3,12 @@
   "A": "劳拉",
   "B": "冷师傅"
  },
- "records": []
+ "records": [
+  {
+   "person": "A",
+   "date": "2026-08-06",
+   "start": 1425,
+   "end": null
+  }
+ ]
 }
