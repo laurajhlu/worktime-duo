@@ -71,8 +71,15 @@
   .tab { padding: 6px 14px; border-radius: 20px; font-size: 13px; background: #eef3f8; color: var(--c-sub); cursor: pointer; border: none; }
   .tab.on { background: var(--c-dark); color: #fff; }
 
-  .chart { width: 100%; }
+  .chart { width: 100%; height: 280px; overflow: hidden; position: relative; }
+  .chart .js-plotly-plot, .chart .plot-container { width: 100% !important; height: 280px !important; }
   .tip { font-size: 11px; color: var(--c-sub); margin-top: 8px; line-height: 1.6; }
+  .statline { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .stat-chip { flex: 1; min-width: 90px; background: #f2f7fb; border-radius: 9px; padding: 8px 6px; text-align: center; }
+  .stat-chip .k { font-size: 11px; color: var(--c-sub); }
+  .stat-chip .v { font-size: 15px; font-weight: 700; margin-top: 2px; }
+  .stat-chip .v.a { color: var(--c-dark); }
+  .stat-chip .v.b { color: #5b87a8; }
   #toast { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); background: rgba(31,78,121,.93); color: #fff; font-size: 13px; padding: 8px 16px; border-radius: 20px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 99; max-width: 90%; text-align: center; }
   #toast.show { opacity: 1; }
   .loading { text-align: center; padding: 40px 0; color: var(--c-sub); }
@@ -122,10 +129,13 @@
     <div class="card">
       <h2>近 14 天每日工时</h2>
       <div id="chartDaily" class="chart"></div>
+      <div class="statline" id="statDaily"></div>
+      <div class="tip">虚线为各自日均工时线，方便看哪天偏离平常。</div>
     </div>
     <div class="card">
       <h2>上下班时间分布（近 30 天）</h2>
       <div id="chartClock" class="chart"></div>
+      <div class="statline" id="statClock"></div>
       <div class="tip">圆点=上班时间，方块=下班时间。位置越高越晚。</div>
     </div>
 
@@ -360,32 +370,83 @@ function renderCmp() {
 const C = { A: '#1f4e79', B: '#8fb4cf' };
 const baseLayout = {
   font: { size: 13, color: '#2b3a4a' },
-  margin: { t: 10, r: 10, b: 45, l: 45 },
+  margin: { t: 8, r: 8, b: 52, l: 42 },
+  height: 280,
+  autosize: true,
   paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-  legend: { font: { size: 12 }, orientation: 'v', x: 1.02, y: 1 },
+  legend: { font: { size: 12 }, orientation: 'h', x: 0, y: 1.16, xanchor: 'left' },
+  hovermode: 'closest',
 };
+const plotCfg = { responsive: true, displayModeBar: false, staticPlot: false, scrollZoom: false, doubleClick: false };
+
+function mmdd(dateStr) { const p = dateStr.split('-'); return p[1] + '/' + p[2]; }
+function avgOf(arr) { return arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null; }
+
+function chip(k, v, cls) {
+  return `<div class="stat-chip"><div class="k">${k}</div><div class="v ${cls||''}">${v}</div></div>`;
+}
 
 function renderCharts() {
-  const c = DATA.cfg, days = [];
+  const c = DATA.cfg;
+  // ---- 近14天工时 ----
+  const days = [];
   for (let i = 13; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(fmtDate(d)); }
+  const labels = days.map(mmdd);
   const series = p => days.map(d => { const r = findRec(p, d); const m = r ? durMin(r) : null; return m != null ? +(m/60).toFixed(2) : null; });
-  Plotly.react('chartDaily', [
-    { x: days, y: series('A'), name: c.A, type:'bar', marker: { color: C.A } },
-    { x: days, y: series('B'), name: c.B, type: 'bar', marker: { color: C.B } },
-  ], { ...baseLayout, barmode: 'group', yaxis: { title: '工时(h)', gridcolor: '#e3eaf1' }, xaxis: { tickangle: -45 } }, { responsive: true, displayModeBar: false });
+  const yA = series('A'), yB = series('B');
+  const avgA = avgOf(yA.filter(v => v != null)), avgB = avgOf(yB.filter(v => v != null));
 
-  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
-  const cs = fmtDate(cutoff);
-  const pick = (p, f) => DATA.records.filter(r => r.person === p && r.date >= cs && r[f] != null);
-  const mk = (recs, f, sym, name, color) => ({
-    x: recs.map(r => r.date), y: recs.map(r => +(r[f]/60).toFixed(2)),
-    mode: 'markers', name, marker: { symbol: sym, size: 9, color } });
-  Plotly.react('chartClock', [
-    mk(pick('A','start'), 'start', 'circle', c.A+' 上班', C.A),
-    mk(pick('A','end'), 'end', 'square', c.A+' 下班', '#3a6a96'),
-    mk(pick('B','start'), 'start', 'circle', c.B+' 上班', C.B),
-    mk(pick('B','end'), 'end', 'square', c.B+' 下班', '#b8cdd9'),
-  ], { ...baseLayout, yaxis: { title: '时刻(h)', gridcolor: '#e3eaf1', range: [5, 26], dtick: 2 }, xaxis: { tickangle: -45 } }, { responsive: true, displayModeBar: false });
+  const traces = [
+    { x: labels, y: yA, name: c.A, type: 'bar', marker: { color: C.A }, hovertemplate: '%{x}<br>%{y}h<extra></extra>' },
+    { x: labels, y: yB, name: c.B, type: 'bar', marker: { color: C.B }, hovertemplate: '%{x}<br>%{y}h<extra></extra>' },
+  ];
+  // 日均虚线
+  if (avgA != null) traces.push({ x: labels, y: labels.map(() => +avgA.toFixed(2)), name: c.A + ' 日均', mode: 'lines', type: 'scatter', line: { color: C.A, width: 2, dash: 'dash' }, hoverinfo: 'skip' });
+  if (avgB != null) traces.push({ x: labels, y: labels.map(() => +avgB.toFixed(2)), name: c.B + ' 日均', mode: 'lines', type: 'scatter', line: { color: '#b8cdd9', width: 2, dash: 'dash' }, hoverinfo: 'skip' });
+
+  const maxY = Math.max(8, ...yA.concat(yB).filter(v => v != null)) * 1.15;
+  Plotly.react('chartDaily', traces, {
+    ...baseLayout, barmode: 'group', bargap: 0.25,
+    yaxis: { title: { text: '工时(h)', standoff: 8 }, gridcolor: '#e8eef4', zeroline: false, range: [0, maxY], fixedrange: true },
+    xaxis: { type: 'category', tickangle: -60, tickfont: { size: 10 }, fixedrange: true, automargin: false },
+  }, plotCfg);
+
+  document.getElementById('statDaily').innerHTML =
+    chip(c.A + ' 日均', avgA != null ? avgA.toFixed(1) + 'h' : '--', 'a') +
+    chip(c.B + ' 日均', avgB != null ? avgB.toFixed(1) + 'h' : '--', 'b') +
+    chip('日均差值', (avgA != null && avgB != null) ? (Math.abs(avgA - avgB)).toFixed(1) + 'h' : '--');
+
+  // ---- 近30天上下班时刻 ----
+  const d30 = [];
+  for (let i = 29; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); d30.push(fmtDate(d)); }
+  const lb30 = d30.map(mmdd);
+  const pickY = (p, f) => d30.map(d => { const r = findRec(p, d); return r && r[f] != null ? +(r[f]/60).toFixed(2) : null; });
+  const sA = pickY('A','start'), eA = pickY('A','end'), sB = pickY('B','start'), eB = pickY('B','end');
+
+  const mk = (y, sym, name, color) => ({ x: lb30, y, mode: 'markers', type: 'scatter', name,
+    marker: { symbol: sym, size: 8, color }, hovertemplate: '%{x}<br>%{y}h<extra></extra>' });
+  const ct = [
+    mk(sA, 'circle', c.A + ' 上班', C.A),
+    mk(eA, 'square', c.A + ' 下班', '#3a6a96'),
+    mk(sB, 'circle', c.B + ' 上班', C.B),
+    mk(eB, 'square', c.B + ' 下班', '#b8cdd9'),
+  ];
+  const allY = sA.concat(eA, sB, eB).filter(v => v != null);
+  const lo = allY.length ? Math.max(0, Math.floor(Math.min(...allY)) - 1) : 7;
+  const hi = allY.length ? Math.min(30, Math.ceil(Math.max(...allY)) + 1) : 21;
+
+  Plotly.react('chartClock', ct, {
+    ...baseLayout,
+    yaxis: { title: { text: '时刻(h)', standoff: 8 }, gridcolor: '#e8eef4', zeroline: false, range: [lo, hi], dtick: 2, fixedrange: true },
+    xaxis: { type: 'category', tickangle: -60, tickfont: { size: 10 }, fixedrange: true, automargin: false },
+  }, plotCfg);
+
+  const st = p => ({ in: avgOf(DATA.records.filter(r => r.person === p && r.start != null && r.date >= d30[0]).map(r => r.start)),
+                     out: avgOf(DATA.records.filter(r => r.person === p && r.end != null && r.date >= d30[0]).map(r => r.end)) });
+  const stA = st('A'), stB = st('B');
+  document.getElementById('statClock').innerHTML =
+    chip(c.A + ' 均上/下', (stA.in != null ? fmtHM(stA.in) : '--') + ' / ' + (stA.out != null ? fmtHM(stA.out) : '--'), 'a') +
+    chip(c.B + ' 均上/下', (stB.in != null ? fmtHM(stB.in) : '--') + ' / ' + (stB.out != null ? fmtHM(stB.out) : '--'), 'b');
 }
 
 // ============ 渲染 ============
@@ -431,6 +492,20 @@ function render() {
 async function setupToken() {
   return !!_tk();
 }
+
+// 屏幕旋转/尺寸变化时重算图表尺寸，避免布局错乱重叠
+let _rz;
+function resizeCharts() {
+  clearTimeout(_rz);
+  _rz = setTimeout(() => {
+    ['chartDaily', 'chartClock'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.data) { try { Plotly.Plots.resize(el); } catch (e) {} }
+    });
+  }, 200);
+}
+window.addEventListener('resize', resizeCharts);
+window.addEventListener('orientationchange', resizeCharts);
 
 refresh(true);
 setInterval(() => { if (!saving && !document.hidden) refresh(true); }, 20000);
