@@ -1,1 +1,7 @@
-{"cfg":{"A":"我","B":"TA"},"records":[{"person":"A","date":"2026-08-01","start":540,"end":1140}]}
+{
+ "cfg": {
+  "A": "我",
+  "B": "TA"
+ },
+ "records": []
+}
