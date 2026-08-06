@@ -4,103 +4,164 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>上班时长双人对比</title>
+<meta name="apple-mobile-web-app-title" content="工时大比拼">
+<title>工时大比拼</title>
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 <style>
   :root {
-    --c-dark: #1f4e79;
-    --c-light: #8fb4cf;
+    --c-donkey: #1f4e79;
+    --c-cow: #c98a3c;
     --c-bg: #f4f7fa;
-    --c-card: #ffffff;
+    --c-card: #fff;
     --c-text: #2b3a4a;
     --c-sub: #7a8b9c;
     --c-border: #e3eaf1;
+    --c-green: #4e7040;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--c-bg); color: var(--c-text); font-size: 15px; }
-  .wrap { max-width: 720px; margin: 0 auto; padding: 14px 14px 70px; }
-  h1 { font-size: 20px; text-align: center; padding: 10px 0 4px; }
-  .sub { text-align: center; color: var(--c-sub); font-size: 12px; margin-bottom: 14px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 12px 14px 70px; }
+
+  /* 顶部 LOGO */
+  .logo-box { background: linear-gradient(135deg, #5b7c4a, #3f5c33); border-radius: 16px; padding: 14px 10px 12px; margin-bottom: 14px; text-align: center; }
+  .logo-box svg { width: 100%; max-width: 340px; height: auto; display: block; margin: 0 auto; }
 
   .person-bar { display: flex; gap: 10px; margin-bottom: 14px; }
-  .person-btn { flex: 1; padding: 14px 8px; border-radius: 14px; border: 2px solid var(--c-border); background: #fff; font-size: 16px; font-weight: 600; color: var(--c-sub); cursor: pointer; transition: all .15s; }
-  .person-btn small { display: block; font-size: 11px; font-weight: 400; margin-top: 3px; }
-  .person-btn.activeA { border-color: var(--c-dark); background: var(--c-dark); color: #fff; }
-  .person-btn.activeA small { color: #cdddee; }
-  .person-btn.activeB { border-color: var(--c-light); background: var(--c-light); color: #fff; }
-  .person-btn.activeB small { color: #eef5fa; }
+  .person-btn { flex: 1; padding: 12px 6px; border-radius: 14px; border: 2px solid var(--c-border); background: #fff; font-size: 15px; font-weight: 600; color: var(--c-sub); cursor: pointer; transition: all .15s; }
+  .person-btn .emoji { font-size: 22px; display: block; line-height: 1.2; }
+  .person-btn small { display: block; font-size: 11px; font-weight: 400; margin-top: 2px; }
+  .person-btn.onA { border-color: var(--c-donkey); background: var(--c-donkey); color: #fff; }
+  .person-btn.onA small { color: #cdddee; }
+  .person-btn.onB { border-color: var(--c-cow); background: var(--c-cow); color: #fff; }
+  .person-btn.onB small { color: #fbeedd; }
 
-  .card { background: var(--c-card); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(31,78,121,.07); }
+  .card { background: var(--c-card); border-radius: 14px; padding: 15px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(31,78,121,.07); }
   .card h2 { font-size: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
   .card h2 .mini { font-size: 12px; color: var(--c-sub); font-weight: 400; cursor: pointer; }
 
   .today-status { text-align: center; color: var(--c-sub); font-size: 13px; margin-bottom: 12px; line-height: 1.8; }
   .today-status b { color: var(--c-text); font-size: 16px; }
   .punch-row { display: flex; gap: 10px; }
-  .punch-btn { flex: 1; padding: 16px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; color: #fff; cursor: pointer; }
-  .punch-btn.in { background: var(--c-dark); }
+  .punch-btn { flex: 1; padding: 15px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; color: #fff; cursor: pointer; background: var(--c-donkey); }
   .punch-btn.out { background: #4a7ba6; }
-  .punch-btn:disabled { background: #c5d2de; cursor: not-allowed; }
+  .punch-btn:disabled { background: #c5d2de; }
   .punch-btn small { display: block; font-size: 11px; font-weight: 400; opacity: .85; margin-top: 2px; }
 
   .form-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .form-row label { flex: 1; min-width: 100px; font-size: 12px; color: var(--c-sub); }
   .form-row input { width: 100%; margin-top: 4px; padding: 9px 10px; border: 1px solid var(--c-border); border-radius: 8px; font-size: 15px; color: var(--c-text); background: #fff; }
-  .btn { padding: 10px 18px; border: none; border-radius: 10px; background: var(--c-dark); color: #fff; font-size: 14px; cursor: pointer; }
-  .btn.ghost { background: #eef3f8; color: var(--c-dark); }
+  .btn { padding: 10px 18px; border: none; border-radius: 10px; background: var(--c-donkey); color: #fff; font-size: 14px; cursor: pointer; }
 
   table.cmp { width: 100%; border-collapse: collapse; font-size: 13px; }
   table.cmp th, table.cmp td { padding: 9px 5px; text-align: center; border-bottom: 1px solid var(--c-border); }
   table.cmp th { color: var(--c-sub); font-weight: 500; font-size: 12px; }
   table.cmp td:first-child, table.cmp th:first-child { text-align: left; color: var(--c-sub); }
-  table.cmp td.a { color: var(--c-dark); font-weight: 600; }
-  table.cmp td.b { color: #5b87a8; font-weight: 600; }
-  td.win::after { content: " ▲"; font-size: 9px; color: #d98e4a; }
+  table.cmp td.a { color: var(--c-donkey); font-weight: 600; }
+  table.cmp td.b { color: var(--c-cow); font-weight: 600; }
+  td.win::after { content: " 👑"; font-size: 10px; }
 
   .rec-item { display: flex; align-items: center; padding: 9px 2px; border-bottom: 1px solid var(--c-border); font-size: 13px; gap: 6px; }
-  .rec-item .who { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
-  .rec-item .who.a { background: var(--c-dark); }
-  .rec-item .who.b { background: var(--c-light); }
-  .rec-item .date { width: 84px; flex-shrink: 0; }
+  .rec-item .ico { width: 20px; text-align: center; flex-shrink: 0; font-size: 15px; }
+  .rec-item .date { width: 52px; flex-shrink: 0; color: var(--c-sub); font-size: 12px; }
   .rec-item .times { flex: 1; }
-  .rec-item .dur { width: 54px; text-align: right; font-weight: 600; flex-shrink: 0; }
+  .rec-item .dur { width: 50px; text-align: right; font-weight: 600; flex-shrink: 0; }
   .rec-item .ops { flex-shrink: 0; display: flex; gap: 4px; }
-  .rec-item .ops button { border: none; background: #eef3f8; border-radius: 6px; padding: 4px 7px; font-size: 11px; color: var(--c-dark); cursor: pointer; }
+  .rec-item .ops button { border: none; background: #eef3f8; border-radius: 6px; padding: 4px 7px; font-size: 11px; color: var(--c-donkey); cursor: pointer; }
 
   .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
   .tab { padding: 6px 14px; border-radius: 20px; font-size: 13px; background: #eef3f8; color: var(--c-sub); cursor: pointer; border: none; }
-  .tab.on { background: var(--c-dark); color: #fff; }
+  .tab.on { background: var(--c-donkey); color: #fff; }
 
-  .chart { width: 100%; height: 280px; overflow: hidden; position: relative; }
-  .chart .js-plotly-plot, .chart .plot-container { width: 100% !important; height: 280px !important; }
-  .tip { font-size: 11px; color: var(--c-sub); margin-top: 8px; line-height: 1.6; }
+  /* 图表容器：固定高度 + 裁剪，避免滑动重叠 */
+  .chart { width: 100%; height: 300px; overflow: hidden; position: relative; }
+  .chart > div { width: 100% !important; height: 300px !important; }
+
   .statline { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-  .stat-chip { flex: 1; min-width: 90px; background: #f2f7fb; border-radius: 9px; padding: 8px 6px; text-align: center; }
+  .stat-chip { flex: 1; min-width: 88px; background: #f2f7fb; border-radius: 9px; padding: 8px 5px; text-align: center; }
   .stat-chip .k { font-size: 11px; color: var(--c-sub); }
   .stat-chip .v { font-size: 15px; font-weight: 700; margin-top: 2px; }
-  .stat-chip .v.a { color: var(--c-dark); }
-  .stat-chip .v.b { color: #5b87a8; }
+  .stat-chip .v.a { color: var(--c-donkey); }
+  .stat-chip .v.b { color: var(--c-cow); }
+
+  /* 甘特式作息条*/
+  .gantt { margin-top: 4px; }
+  .g-row { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
+  .g-day { width: 46px; font-size: 11px; color: var(--c-sub); flex-shrink: 0; }
+  .g-track { flex: 1; position: relative; height: 26px; background: #f5f8fb; border-radius: 6px; overflow: hidden; }
+  .g-bar { position: absolute; height: 10px; border-radius: 5px; top: 2px; }
+  .g-bar.b { top: 14px; }
+  .g-bar.a { background: var(--c-donkey); }
+  .g-bar.b { background: var(--c-cow); }
+  .g-axis { display: flex; margin: 2px 0 8px 52px; font-size: 10px; color: var(--c-sub); }
+  .g-axis span { flex: 1; text-align: left; }
+  .g-legend { font-size: 11px; color: var(--c-sub); margin-top: 6px; line-height: 1.7; }
+  .g-legend i { display: inline-block; width: 14px; height: 8px; border-radius: 4px; margin-right: 4px; vertical-align: middle; }
+
+  .tip { font-size: 11px; color: var(--c-sub); margin-top: 8px; line-height: 1.6; }
   #toast { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); background: rgba(31,78,121,.93); color: #fff; font-size: 13px; padding: 8px 16px; border-radius: 20px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 99; max-width: 90%; text-align: center; }
   #toast.show { opacity: 1; }
-  .loading { text-align: center; padding: 40px 0; color: var(--c-sub); }
+  .loading { text-align: center; padding: 40px 0; color: var(--c-sub); line-height: 2; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>⏱ 上班时长双人对比</h1>
-  <div class="sub">云端同步 · 两人共用本链接<span id="netState"></span></div>
+  <!-- LOGO -->
+  <div class="logo-box">
+    <svg viewBox="0 0 420 118" xmlns="http://www.w3.org/2000/svg">
+      <!-- 驴 -->
+      <g transform="translate(52,62) scale(0.82)" fill="none" stroke="#2f2f2f" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M-16,-40 C-22,-58 -19,-66 -13,-64 C-8,-62 -8,-50 -11,-40" fill="#fff"/>
+        <path d="M2,-42 C0,-60 5,-68 10,-65 C15,-62 12,-50 8,-41" fill="#fff"/>
+        <path d="M-16,-40 C-24,-26 -24,-6 -14,2 C-4,10 10,8 16,-2 C22,-14 18,-34 8,-42 Z" fill="#fff"/>
+        <path d="M-18,-36 L-25,-34 M-20,-28 L-28,-27 M-21,-20 L-29,-19"/>
+        <circle cx="-8" cy="-22" r="2.6" fill="#2f2f2f" stroke="none"/>
+        <circle cx="7" cy="-24" r="2.6" fill="#2f2f2f" stroke="none"/>
+        <ellipse cx="0" cy="-2" rx="10" ry="7" fill="#fff"/>
+        <circle cx="-3" cy="-3" r="1.5" fill="#2f2f2f" stroke="none"/>
+        <circle cx="4" cy="-3" r="1.5" fill="#2f2f2f" stroke="none"/>
+        <path d="M-10,6 C-16,16 -16,34 -8,42 L10,42 C18,32 18,16 12,6" fill="#fff"/>
+        <path d="M-14,14 L-30,6"/><circle cx="-34" cy="4" r="5" fill="#2f2f2f" stroke="none"/>
+        <path d="M16,14 L30,8"/><circle cx="34" cy="6" r="5" fill="#2f2f2f" stroke="none"/>
+        <path d="M-6,42 L-8,56"/><path d="M8,42 L10,56"/>
+        <ellipse cx="-9" cy="59" rx="5" ry="3" fill="#2f2f2f" stroke="none"/>
+        <ellipse cx="11" cy="59" rx="5" ry="3" fill="#2f2f2f" stroke="none"/>
+      </g>
+      <!-- 牛 -->
+      <g transform="translate(368,62) scale(-0.82,0.82)" fill="none" stroke="#2f2f2f" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M-18,-40 C-28,-50 -30,-58 -24,-58 C-19,-58 -16,-50 -15,-43" fill="#fff"/>
+        <path d="M6,-42 C14,-52 20,-58 22,-53 C24,-48 16,-44 11,-42" fill="#fff"/>
+        <path d="M-20,-32 C-30,-34 -34,-28 -28,-24 C-24,-22 -20,-25 -19,-28" fill="#fff"/>
+        <path d="M10,-34 C20,-37 25,-31 19,-26 C15,-24 11,-27 10,-30" fill="#fff"/>
+        <path d="M-18,-40 C-24,-24 -22,-6 -12,2 C-2,10 8,8 14,-2 C20,-14 16,-34 6,-42 Z" fill="#fff"/>
+        <circle cx="-9" cy="-20" r="2.6" fill="#2f2f2f" stroke="none"/>
+        <circle cx="6" cy="-22" r="2.6" fill="#2f2f2f" stroke="none"/>
+        <ellipse cx="-1" cy="-1" rx="11" ry="7.5" fill="#fff"/>
+        <circle cx="-4" cy="-2" r="1.6" fill="#2f2f2f" stroke="none"/>
+        <circle cx="3" cy="-2" r="1.6" fill="#2f2f2f" stroke="none"/>
+        <path d="M-10,6 C-17,16 -17,34 -9,42 L10,42 C18,32 18,16 12,6" fill="#fff"/>
+        <path d="M-14,14 L-30,8"/><circle cx="-34" cy="6" r="5" fill="#2f2f2f" stroke="none"/>
+        <path d="M16,16 L30,12"/><circle cx="34" cy="11" r="5" fill="#2f2f2f" stroke="none"/>
+        <path d="M16,24 C24,26 26,34 22,38"/>
+        <path d="M-6,42 L-8,56"/><path d="M8,42 L10,56"/>
+        <ellipse cx="-9" cy="59" rx="5" ry="3" fill="#2f2f2f" stroke="none"/>
+        <ellipse cx="11" cy="59" rx="5" ry="3" fill="#2f2f2f" stroke="none"/>
+      </g>
+      <text x="210" y="52" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="31" font-weight="700" fill="#fff">工时大比拼</text>
+      <text x="210" y="76" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="13" fill="#dbe8ce" letter-spacing="3">来比划比划</text>
+    </svg>
+  </div>
 
   <div id="app" style="display:none">
     <div class="person-bar">
-      <button class="person-btn" id="btnA" onclick="switchPerson('A')"><span id="nameA">我</span><small id="todayA"></small></button>
-      <button class="person-btn" id="btnB" onclick="switchPerson('B')"><span id="nameB">TA</span><small id="todayB"></small></button>
+      <button class="person-btn" id="btnA" onclick="switchPerson('A')"><span class="emoji">🫏</span><span id="nameA">我</span><small id="todayA"></small></button>
+      <button class="person-btn" id="btnB" onclick="switchPerson('B')"><span class="emoji">🐮</span><span id="nameB">TA</span><small id="todayB"></small></button>
     </div>
 
     <div class="card">
       <h2>今日打卡 <span class="mini" onclick="rename()">✏️ 改昵称</span></h2>
       <div class="today-status" id="todayStatus"></div>
       <div class="punch-row">
-        <button class="punch-btn in" id="punchIn" onclick="punch('in')">上班打卡<small id="inTime"></small></button>
+        <button class="punch-btn" id="punchIn" onclick="punch('in')">上班打卡<small id="inTime"></small></button>
         <button class="punch-btn out" id="punchOut" onclick="punch('out')">下班打卡<small id="outTime"></small></button>
       </div>
     </div>
@@ -109,34 +170,39 @@
       <h2>手动补录 / 修正</h2>
       <div class="form-row">
         <label>日期<input type="date" id="fDate"></label>
-        <label>上班时间<input type="time" id="fStart"></label>
-        <label>下班时间<input type="time" id="fEnd"></label>
+        <label>上班<input type="time" id="fStart"></label>
+        <label>下班<input type="time" id="fEnd"></label>
       </div>
       <button class="btn" onclick="saveManual()">保存到当前选中的人</button>
     </div>
 
     <div class="card">
-      <h2>数据对比</h2>
+      <h2>战绩对比</h2>
       <div class="tabs">
         <button class="tab on" onclick="setPeriod('week', this)">本周</button>
         <button class="tab" onclick="setPeriod('month', this)">本月</button>
         <button class="tab" onclick="setPeriod('all', this)">全部</button>
       </div>
       <table class="cmp" id="cmpTable"></table>
-      <div class="tip">▲ 表示该项领先（工时更少为"躺赢"，打卡更早为"卷赢"）。标准工时按每天 8h 计，超出部分计为加班。</div>
+      <div class="tip">👑 = 该项"赢"（工时更少、下班更早算赢，谁更能躺谁光荣）。标准工时按 8h/天，超出计为加班。</div>
     </div>
 
     <div class="card">
       <h2>近 14 天每日工时</h2>
       <div id="chartDaily" class="chart"></div>
       <div class="statline" id="statDaily"></div>
-      <div class="tip">虚线为各自日均工时线，方便看哪天偏离平常。</div>
+      <div class="tip">虚线 = 各自日均水平线，看哪天偏离平常。</div>
     </div>
+
     <div class="card">
-      <h2>上下班时间分布（近 30 天）</h2>
-      <div id="chartClock" class="chart"></div>
-      <div class="statline" id="statClock"></div>
-      <div class="tip">圆点=上班时间，方块=下班时间。位置越高越晚。</div>
+      <h2>作息时间轴（近 10 天）</h2>
+      <div class="g-axis"><span>6点</span><span>10点</span><span>14点</span><span>18点</span><span>22点</span></div>
+      <div class="gantt" id="gantt"></div>
+      <div class="g-legend">
+        <i style="background:#1f4e79"></i>上排 =<span id="lgA">我</span>　
+        <i style="background:#c98a3c"></i>下排 = <span id="lgB">TA</span><br>
+        横条从上班时间延伸到下班时间，越长代表在公司待得越久。
+      </div>
     </div>
 
     <div class="card">
@@ -149,11 +215,10 @@
 <div id="toast"></div>
 
 <script>
-// ============ 云端存储配置 ============
+// ============ 云端存储 ============
 const REPO = 'laurajhlu/worktime-duo';
 const FILE = 'data.json';
 const API = 'https://api.github.com';
-// 密钥只存本机浏览器，永不上传
 const _tk = () => localStorage.getItem('wtd_token') || '';
 
 let SHA = null;
@@ -172,59 +237,45 @@ function toast(msg, ms) {
 
 async function ghGet() {
   const r = await fetch(`${API}/repos/${REPO}/contents/${FILE}?ref=main&t=${Date.now()}`, {
-    headers: { Authorization: 'Bearer ' + _tk(), Accept: 'application/vnd.github+json' },
-    cache: 'no-store'
-  });
+    headers: { Authorization: 'Bearer ' + _tk(), Accept: 'application/vnd.github+json' }, cache: 'no-store' });
   if (r.status === 404) { SHA = null; return { cfg: { A: '我', B: 'TA' }, records: [] }; }
   if (!r.ok) throw new Error('读取失败 ' + r.status);
   const j = await r.json();
   SHA = j.sha;
-  const txt = decodeURIComponent(escape(atob(j.content.replace(/\s/g, ''))));
-  return JSON.parse(txt);
+  return JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\s/g, '')))));
 }
 
 async function ghPut(obj, msg) {
-  const body = {
-    message: msg ||'update',
-    content: btoa(unescape(encodeURIComponent(JSON.stringify(obj, null, 1)))),
-    branch: 'main'
-  };
+  const body = { message: msg || 'update',
+    content: btoa(unescape(encodeURIComponent(JSON.stringify(obj, null, 1)))), branch: 'main' };
   if (SHA) body.sha = SHA;
-  const r = await fetch(`${API}/repos/${REPO}/contents/${FILE}`, {
-    method: 'PUT',
+  const r = await fetch(`${API}/repos/${REPO}/contents/${FILE}`, { method: 'PUT',
     headers: { Authorization: 'Bearer ' + _tk(), Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  if (r.status === 409 || r.status === 422) return'conflict';
+    body: JSON.stringify(body) });
+  if (r.status === 409 || r.status === 422) return 'conflict';
   if (!r.ok) throw new Error('保存失败 ' + r.status);
-  const j = await r.json();
-  SHA = j.content.sha;
+  SHA = (await r.json()).content.sha;
   return 'ok';
 }
 
-// 带冲突重试的提交：先拉最新，应用修改函数，再写回
 async function commit(mutate, msg) {
-  if (saving) { toast('正在保存，请稍候'); return false; }
+  if (saving) { toast('正在保存，稍等'); return false; }
   saving = true;
   try {
     for (let i = 0; i < 4; i++) {
       const fresh = await ghGet();
       mutate(fresh);
-      const res = await ghPut(fresh, msg);
-      if (res === 'ok') { DATA = fresh; render(); toast('已同步 ✓'); return true; }
+      if (await ghPut(fresh, msg) === 'ok') { DATA = fresh; render(); toast('已同步 ✓'); return true; }
       await new Promise(r => setTimeout(r, 700 * (i + 1)));
     }
-    toast('保存冲突，请重试');
-    return false;
-  } catch (e) {
-    toast(e.message || '网络异常');
-    return false;
-  } finally { saving = false; }
+    toast('保存冲突，请重试'); return false;
+  } catch (e) { toast(e.message || '网络异常'); return false; }
+  finally { saving = false; }
 }
 
 async function refresh(silent) {
   if (!_tk()) {
-    document.getElementById('loading').innerHTML = '需要访问密钥才能同步数据<br><br><button class="btn" onclick="askToken()">输入密钥</button>';
+    document.getElementById('loading').innerHTML = '需要访问密钥才能同步<br><br><button class="btn" onclick="askToken()">输入密钥</button>';
     return;
   }
   try {
@@ -232,21 +283,18 @@ async function refresh(silent) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('app').style.display = '';
     render();
-    document.getElementById('netState').textContent = '';
     if (!silent) toast('已刷新 ✓');
   } catch (e) {
-    document.getElementById('netState').textContent = '· 离线';
     if (!silent) toast('刷新失败：' + e.message);
     if (document.getElementById('app').style.display === 'none') {
-      const bad = /40[13]/.test(e.message);
-      document.getElementById('loading').innerHTML = (bad ? '密钥无效或已过期' : '加载失败：' + e.message) +
+      document.getElementById('loading').innerHTML = (/40[13]/.test(e.message) ? '密钥无效或已过期' : '加载失败：' + e.message) +
         '<br><br><button class="btn" onclick="askToken()">重新输入密钥</button>';
     }
   }
 }
 
 function askToken() {
-  const t = prompt('请粘贴访问密钥（只需输入一次，保存在本机浏览器）：', '');
+  const t = prompt('请粘贴访问密钥（只需输一次，保存在本机）：', '');
   if (!t || !t.trim()) { toast('未输入密钥'); return; }
   localStorage.setItem('wtd_token', t.trim());
   document.getElementById('loading').textContent = '正在加载云端数据…';
@@ -258,13 +306,16 @@ function fmtDate(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padS
 function todayStr() { return fmtDate(new Date()); }
 function nowHM() { const d = new Date(); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
 function toMin(hm) { if(!hm) return null; const [h,m] = hm.split(':').map(Number); return h*60+m; }
-function durMin(r) { if(r.start==null||r.end==null) return null; let d = r.end - r.start; if(d < 0) d += 1440; return d; }
-function fmtDur(min) { if(min==null) return '--'; return (min/60).toFixed(1) + 'h'; }
-function fmtHM(min) { if(min==null) return '--'; min = Math.round(min); return String(Math.floor(min/60)).padStart(2,'0') + ':' + String(min%60).padStart(2,'0'); }
-function findRec(person, date) { return DATA.records.find(r => r.person === person && r.date === date); }
+function durMin(r) { if(r.start==null||r.end==null) return null; let d = r.end - r.start; if(d<0) d+=1440; return d; }
+function fmtDur(m) { return m==null ? '--' : (m/60).toFixed(1)+'h'; }
+function fmtHM(m) { if(m==null) return '--'; m=Math.round(m); return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+function mmdd(s) { const p = s.split('-'); return p[1]+'/'+p[2]; }
+function wk(s) { return '日一二三四五六'[new Date(s+'T00:00:00').getDay()]; }
+function findRec(p, d) { return DATA.records.find(r => r.person===p && r.date===d); }
+function avgOf(a) { return a.length ? a.reduce((x,y)=>x+y,0)/a.length : null; }
 
 function upsert(d, person, date, start, end) {
-  let r = d.records.find(x => x.person === person && x.date === date);
+  let r = d.records.find(x => x.person===person && x.date===date);
   if (!r) { r = { person, date, start: null, end: null }; d.records.push(r); }
   if (start !== undefined) r.start = start;
   if (end !== undefined) r.end = end;
@@ -273,80 +324,67 @@ function upsert(d, person, date, start, end) {
 // ============ 操作 ============
 function punch(type) {
   const t = todayStr(), m = toMin(nowHM());
-  commit(d => upsert(d, cur, t, type === 'in' ? m : undefined, type === 'out' ? m : undefined),
-         `${DATA.cfg[cur]} ${t} ${type === 'in' ? '上班' : '下班'} ${fmtHM(m)}`);
+  commit(d => upsert(d, cur, t, type==='in'?m:undefined, type==='out'?m:undefined),
+    `${DATA.cfg[cur]} ${t} ${type==='in'?'上班':'下班'} ${fmtHM(m)}`);
 }
-
 function saveManual() {
   const dt = document.getElementById('fDate').value;
   if (!dt) { toast('请选择日期'); return; }
-  const s = toMin(document.getElementById('fStart').value);
-  const e = toMin(document.getElementById('fEnd').value);
-  commit(d => upsert(d, cur, dt, s, e), `补录 ${DATA.cfg[cur]} ${dt}`);
+  commit(d => upsert(d, cur, dt, toMin(document.getElementById('fStart').value), toMin(document.getElementById('fEnd').value)),
+    `补录 ${DATA.cfg[cur]} ${dt}`);
 }
-
-function delRec(person, date) {
-  if (!confirm(`删除 ${DATA.cfg[person]} ${date} 的记录？`)) return;
-  commit(d => { d.records = d.records.filter(r => !(r.person === person && r.date === date)); },
-         `删除 ${DATA.cfg[person]} ${date}`);
+function delRec(p, d) {
+  if (!confirm(`删除 ${DATA.cfg[p]} ${d} 的记录？`)) return;
+  commit(x => { x.records = x.records.filter(r => !(r.person===p && r.date===d)); }, `删除 ${DATA.cfg[p]} ${d}`);
 }
-
-function editRec(person, date) {
-  switchPerson(person);
-  const r = findRec(person, date);
-  document.getElementById('fDate').value = date;
-  document.getElementById('fStart').value = r && r.start != null ? fmtHM(r.start) : '';
-  document.getElementById('fEnd').value = r && r.end != null ? fmtHM(r.end) : '';
+function editRec(p, d) {
+  switchPerson(p);
+  const r = findRec(p, d);
+  document.getElementById('fDate').value = d;
+  document.getElementById('fStart').value = r && r.start!=null ? fmtHM(r.start) : '';
+  document.getElementById('fEnd').value = r && r.end!=null ? fmtHM(r.end) : '';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
 function rename() {
-  const a = prompt('你的昵称：', DATA.cfg.A);
-  const b = prompt('TA 的昵称：', DATA.cfg.B);
+  const a = prompt('你的昵称（🫏 驴）：', DATA.cfg.A);
+  const b = prompt('TA 的昵称（🐮 牛）：', DATA.cfg.B);
   if (!a && !b) return;
-  commit(d => {
-    if (a) d.cfg.A = a.trim().slice(0,8) || d.cfg.A;
-    if (b) d.cfg.B = b.trim().slice(0,8) || d.cfg.B;
-  }, '修改昵称');
+  commit(d => { if(a) d.cfg.A = a.trim().slice(0,8)||d.cfg.A; if(b) d.cfg.B = b.trim().slice(0,8)||d.cfg.B; }, '修改昵称');
 }
-
 function switchPerson(p) { cur = p; localStorage.setItem('wtd_cur', p); render(); }
 function setPeriod(p, el) {
   period = p;
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t === el));
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t===el));
   renderCmp();
 }
 
 // ============ 统计 ============
-function inPeriod(dateStr) {
+function inPeriod(s) {
   if (period === 'all') return true;
-  const d = new Date(dateStr + 'T00:00:00');
-  const now = new Date(); now.setHours(0,0,0,0);
+  const d = new Date(s+'T00:00:00'), now = new Date(); now.setHours(0,0,0,0);
   if (period === 'week') {
-    const monday = new Date(now); monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    return d >= monday && d <= now;
+    const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay()+6)%7));
+    return d >= mon && d <= now;
   }
-  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
 }
 
-function stats(person) {
-  const recs = DATA.records.filter(r => r.person === person && inPeriod(r.date));
-  const full = recs.filter(r => durMin(r) != null);
-  const total = full.reduce((s, r) => s + durMin(r), 0);
-  const ot = full.reduce((s, r) => s + Math.max(0, durMin(r) - WORK_MIN), 0);
-  const starts = recs.filter(r => r.start != null).map(r => r.start);
-  const ends = recs.filter(r => r.end != null).map(r => r.end);
-  const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null;
-  return { days: full.length, total, ot,
-    avgDay: full.length ? total / full.length : null,
-    avgIn: avg(starts), avgOut: avg(ends),
-    latest: ends.length ? Math.max(...ends) : null };
+function stats(p) {
+  const recs = DATA.records.filter(r => r.person===p && inPeriod(r.date));
+  const full = recs.filter(r => durMin(r)!=null);
+  const total = full.reduce((s,r)=>s+durMin(r),0);
+  return { days: full.length, total,
+    ot: full.reduce((s,r)=>s+Math.max(0,durMin(r)-WORK_MIN),0),
+    avgDay: full.length ? total/full.length : null,
+    avgIn: avgOf(recs.filter(r=>r.start!=null).map(r=>r.start)),
+    avgOut: avgOf(recs.filter(r=>r.end!=null).map(r=>r.end)),
+    latest: recs.filter(r=>r.end!=null).length ? Math.max(...recs.filter(r=>r.end!=null).map(r=>r.end)) : null };
 }
 
 function renderCmp() {
   const c = DATA.cfg, A = stats('A'), B = stats('B');
   const rows = [
-    ['打卡天数', A.days, B.days, v => v + ' 天', false],
+    ['打卡天数', A.days, B.days, v=>v+' 天', null],
     ['总工时', A.total, B.total, fmtDur, true],
     ['日均工时', A.avgDay, B.avgDay, fmtDur, true],
     ['累计加班', A.ot, B.ot, fmtDur, true],
@@ -354,99 +392,79 @@ function renderCmp() {
     ['平均下班', A.avgOut, B.avgOut, fmtHM, true],
     ['最晚下班', A.latest, B.latest, fmtHM, true],
   ];
-  let html = `<tr><th>指标</th><th>${c.A}</th><th>${c.B}</th></tr>`;
-  for (const [label, va, vb, fmt, less] of rows) {
-    let ca = '', cb = '';
-    if (va != null && vb != null && va !== vb) {
-      const aWin = less ? va < vb : va > vb;
-      ca = aWin ? 'win' : ''; cb = aWin ? '' : 'win';
+  let h = `<tr><th>指标</th><th>🫏 ${c.A}</th><th>🐮 ${c.B}</th></tr>`;
+  for (const [k, va, vb, fmt, less] of rows) {
+    let ca='', cb='';
+    if (less !== null && va!=null && vb!=null && va!==vb) {
+      const aw = less ? va<vb : va>vb;
+      ca = aw?'win':''; cb = aw?'':'win';
     }
-    html += `<tr><td>${label}</td><td class="a ${ca}">${fmt(va)}</td><td class="b ${cb}">${fmt(vb)}</td></tr>`;
+    h += `<tr><td>${k}</td><td class="a ${ca}">${fmt(va)}</td><td class="b ${cb}">${fmt(vb)}</td></tr>`;
   }
-  document.getElementById('cmpTable').innerHTML = html;
+  document.getElementById('cmpTable').innerHTML = h;
 }
 
 // ============ 图表 ============
-const C = { A: '#1f4e79', B: '#8fb4cf' };
-const baseLayout = {
-  font: { size: 13, color: '#2b3a4a' },
-  margin: { t: 8, r: 8, b: 52, l: 42 },
-  height: 280,
-  autosize: true,
-  paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-  legend: { font: { size: 12 }, orientation: 'h', x: 0, y: 1.16, xanchor: 'left' },
-  hovermode: 'closest',
-};
-const plotCfg = { responsive: true, displayModeBar: false, staticPlot: false, scrollZoom: false, doubleClick: false };
-
-function mmdd(dateStr) { const p = dateStr.split('-'); return p[1] + '/' + p[2]; }
-function avgOf(arr) { return arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null; }
-
-function chip(k, v, cls) {
-  return `<div class="stat-chip"><div class="k">${k}</div><div class="v ${cls||''}">${v}</div></div>`;
-}
+const C = { A: '#1f4e79', B: '#c98a3c' };
+function chip(k, v, cls) { return `<div class="stat-chip"><div class="k">${k}</div><div class="v ${cls||''}">${v}</div></div>`; }
 
 function renderCharts() {
   const c = DATA.cfg;
-  // ---- 近14天工时 ----
   const days = [];
-  for (let i = 13; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(fmtDate(d)); }
-  const labels = days.map(mmdd);
-  const series = p => days.map(d => { const r = findRec(p, d); const m = r ? durMin(r) : null; return m != null ? +(m/60).toFixed(2) : null; });
-  const yA = series('A'), yB = series('B');
-  const avgA = avgOf(yA.filter(v => v != null)), avgB = avgOf(yB.filter(v => v != null));
+  for (let i=13; i>=0; i--) { const d=new Date(); d.setDate(d.getDate()-i); days.push(fmtDate(d)); }
+  const labels = days.map(d => mmdd(d) + '<br>' + wk(d));
+  const ser = p => days.map(d => { const r=findRec(p,d), m=r?durMin(r):null; return m!=null ? +(m/60).toFixed(2) : null; });
+  const yA = ser('A'), yB = ser('B');
+  const aA = avgOf(yA.filter(v=>v!=null)), aB = avgOf(yB.filter(v=>v!=null));
 
-  const traces = [
-    { x: labels, y: yA, name: c.A, type: 'bar', marker: { color: C.A }, hovertemplate: '%{x}<br>%{y}h<extra></extra>' },
-    { x: labels, y: yB, name: c.B, type: 'bar', marker: { color: C.B }, hovertemplate: '%{x}<br>%{y}h<extra></extra>' },
+  const tr = [
+    { x: labels, y: yA, name: '🫏 '+c.A, type: 'bar', marker: { color: C.A }, hovertemplate: '%{y}h<extra></extra>' },
+    { x: labels, y: yB, name: '🐮 '+c.B, type: 'bar', marker: { color: C.B }, hovertemplate: '%{y}h<extra></extra>' },
   ];
-  // 日均虚线
-  if (avgA != null) traces.push({ x: labels, y: labels.map(() => +avgA.toFixed(2)), name: c.A + ' 日均', mode: 'lines', type: 'scatter', line: { color: C.A, width: 2, dash: 'dash' }, hoverinfo: 'skip' });
-  if (avgB != null) traces.push({ x: labels, y: labels.map(() => +avgB.toFixed(2)), name: c.B + ' 日均', mode: 'lines', type: 'scatter', line: { color: '#b8cdd9', width: 2, dash: 'dash' }, hoverinfo: 'skip' });
+  if (aA!=null) tr.push({ x: labels, y: labels.map(()=>+aA.toFixed(2)), name: c.A+' 日均', mode: 'lines', type: 'scatter', line: { color: C.A, width: 2, dash: 'dash' }, hoverinfo: 'skip' });
+  if (aB!=null) tr.push({ x: labels, y: labels.map(()=>+aB.toFixed(2)), name: c.B+' 日均', mode: 'lines', type: 'scatter', line: { color: C.B, width: 2, dash: 'dash' }, hoverinfo: 'skip' });
 
-  const maxY = Math.max(8, ...yA.concat(yB).filter(v => v != null)) * 1.15;
-  Plotly.react('chartDaily', traces, {
-    ...baseLayout, barmode: 'group', bargap: 0.25,
-    yaxis: { title: { text: '工时(h)', standoff: 8 }, gridcolor: '#e8eef4', zeroline: false, range: [0, maxY], fixedrange: true },
-    xaxis: { type: 'category', tickangle: -60, tickfont: { size: 10 }, fixedrange: true, automargin: false },
-  }, plotCfg);
+  const mx = Math.max(9, ...yA.concat(yB).filter(v=>v!=null).map(v=>v*1.15));
+  Plotly.react('chartDaily', tr, {
+    font: { size: 11, color: '#2b3a4a' },
+    margin: { t: 6, r: 6, b: 46, l: 34 },
+    height: 300, autosize: true,
+    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+    legend: { font: { size: 11 }, orientation: 'h', x: 0, y: 1.14},
+    barmode: 'group', bargap: 0.3,
+    yaxis: { ticksuffix: 'h', gridcolor: '#e8eef4', zeroline: false, range: [0, mx], fixedrange: true, tickfont: { size: 10 } },
+    xaxis: { type: 'category', tickfont: { size: 9}, fixedrange: true, tickangle: 0 },
+  }, { responsive: true, displayModeBar: false, doubleClick: false });
 
   document.getElementById('statDaily').innerHTML =
-    chip(c.A + ' 日均', avgA != null ? avgA.toFixed(1) + 'h' : '--', 'a') +
-    chip(c.B + ' 日均', avgB != null ? avgB.toFixed(1) + 'h' : '--', 'b') +
-    chip('日均差值', (avgA != null && avgB != null) ? (Math.abs(avgA - avgB)).toFixed(1) + 'h' : '--');
+    chip('🫏 '+c.A+' 日均', aA!=null?aA.toFixed(1)+'h':'--', 'a') +
+    chip('🐮 '+c.B+' 日均', aB!=null?aB.toFixed(1)+'h':'--', 'b') +
+    chip('差值', (aA!=null&&aB!=null)?Math.abs(aA-aB).toFixed(1)+'h':'--');
+}
 
-  // ---- 近30天上下班时刻 ----
-  const d30 = [];
-  for (let i = 29; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); d30.push(fmtDate(d)); }
-  const lb30 = d30.map(mmdd);
-  const pickY = (p, f) => d30.map(d => { const r = findRec(p, d); return r && r[f] != null ? +(r[f]/60).toFixed(2) : null; });
-  const sA = pickY('A','start'), eA = pickY('A','end'), sB = pickY('B','start'), eB = pickY('B','end');
-
-  const mk = (y, sym, name, color) => ({ x: lb30, y, mode: 'markers', type: 'scatter', name,
-    marker: { symbol: sym, size: 8, color }, hovertemplate: '%{x}<br>%{y}h<extra></extra>' });
-  const ct = [
-    mk(sA, 'circle', c.A + ' 上班', C.A),
-    mk(eA, 'square', c.A + ' 下班', '#3a6a96'),
-    mk(sB, 'circle', c.B + ' 上班', C.B),
-    mk(eB, 'square', c.B + ' 下班', '#b8cdd9'),
-  ];
-  const allY = sA.concat(eA, sB, eB).filter(v => v != null);
-  const lo = allY.length ? Math.max(0, Math.floor(Math.min(...allY)) - 1) : 7;
-  const hi = allY.length ? Math.min(30, Math.ceil(Math.max(...allY)) + 1) : 21;
-
-  Plotly.react('chartClock', ct, {
-    ...baseLayout,
-    yaxis: { title: { text: '时刻(h)', standoff: 8 }, gridcolor: '#e8eef4', zeroline: false, range: [lo, hi], dtick: 2, fixedrange: true },
-    xaxis: { type: 'category', tickangle: -60, tickfont: { size: 10 }, fixedrange: true, automargin: false },
-  }, plotCfg);
-
-  const st = p => ({ in: avgOf(DATA.records.filter(r => r.person === p && r.start != null && r.date >= d30[0]).map(r => r.start)),
-                     out: avgOf(DATA.records.filter(r => r.person === p && r.end != null && r.date >= d30[0]).map(r => r.end)) });
-  const stA = st('A'), stB = st('B');
-  document.getElementById('statClock').innerHTML =
-    chip(c.A + ' 均上/下', (stA.in != null ? fmtHM(stA.in) : '--') + ' / ' + (stA.out != null ? fmtHM(stA.out) : '--'), 'a') +
-    chip(c.B + ' 均上/下', (stB.in != null ? fmtHM(stB.in) : '--') + ' / ' + (stB.out != null ? fmtHM(stB.out) : '--'), 'b');
+// 作息时间轴（替代原来看不懂的散点图）
+function renderGantt() {
+  const c = DATA.cfg;
+  document.getElementById('lgA').textContent = c.A;
+  document.getElementById('lgB').textContent = c.B;
+  const L = 6*60, R = 24*60; // 6:00 - 24:00
+  const pct = m => Math.max(0, Math.min(100, (m - L) / (R - L) * 100));
+  let h = '';
+  for (let i=0; i<10; i++) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const ds = fmtDate(d);
+    const rA = findRec('A', ds), rB = findRec('B', ds);
+    const bar = (r, cls) => {
+      if (!r || r.start==null) return '';
+      const s = pct(r.start), e = r.end!=null ? pct(r.end) : s + 1.5;
+      const w = Math.max(1.5, e - s);
+      const t = r.end!=null ? `${fmtHM(r.start)}-${fmtHM(r.end)} (${fmtDur(durMin(r))})` : `${fmtHM(r.start)} 上班中`;
+      return `<div class="g-bar ${cls}" style="left:${s}%;width:${w}%" title="${t}"></div>`;
+    };
+    if (!rA && !rB) continue;
+    h += `<div class="g-row"><div class="g-day">${mmdd(ds)} ${wk(ds)}</div><div class="g-track">${bar(rA,'a')}${bar(rB,'b')}</div></div>`;
+  }
+  document.getElementById('gantt').innerHTML = h || '<div class="tip">还没有打卡记录</div>';
 }
 
 // ============ 渲染 ============
@@ -454,54 +472,48 @@ function render() {
   const c = DATA.cfg;
   document.getElementById('nameA').textContent = c.A;
   document.getElementById('nameB').textContent = c.B;
-  document.getElementById('btnA').className = 'person-btn' + (cur === 'A' ? ' activeA' : '');
-  document.getElementById('btnB').className = 'person-btn' + (cur === 'B' ? ' activeB' : '');
+  document.getElementById('btnA').className = 'person-btn' + (cur==='A'?' onA':'');
+  document.getElementById('btnB').className = 'person-btn' + (cur==='B'?' onB':'');
 
   const t = todayStr();
-  const brief = r => r ? ((r.start != null ? fmtHM(r.start) + ' 上' : '') + (r.end != null ? ' / ' + fmtHM(r.end) + ' 下' : '')) || '未打卡' : '未打卡';
-  document.getElementById('todayA').textContent = brief(findRec('A', t));
-  document.getElementById('todayB').textContent = brief(findRec('B', t));
+  const brief = r => r ? ((r.start!=null?fmtHM(r.start):'')+(r.end!=null?'→'+fmtHM(r.end):'')) || '未打卡' : '未打卡';
+  document.getElementById('todayA').textContent = brief(findRec('A',t));
+  document.getElementById('todayB').textContent = brief(findRec('B',t));
 
   const r = findRec(cur, t), st = [];
-  if (r && r.start != null) st.push(`上班 <b>${fmtHM(r.start)}</b>`);
-  if (r && r.end != null) st.push(`下班 <b>${fmtHM(r.end)}</b>`);
-  if (r && durMin(r) != null) st.push(`已工作 <b>${fmtDur(durMin(r))}</b>`);
-  document.getElementById('todayStatus').innerHTML = st.length ? st.join(' · ') : '今天还没有打卡记录';
-  document.getElementById('inTime').textContent = r && r.start != null ? '已打 ' + fmtHM(r.start) : '';
-  document.getElementById('outTime').textContent = r && r.end != null ? '已打 ' + fmtHM(r.end) : '';
-  document.getElementById('punchIn').disabled = !!(r && r.start != null);
-  document.getElementById('punchOut').disabled = !(r && r.start != null) || !!(r && r.end != null);
+  if (r && r.start!=null) st.push(`上班 <b>${fmtHM(r.start)}</b>`);
+  if (r && r.end!=null) st.push(`下班 <b>${fmtHM(r.end)}</b>`);
+  if (r && durMin(r)!=null) st.push(`共<b>${fmtDur(durMin(r))}</b>`);
+  document.getElementById('todayStatus').innerHTML = st.length ? st.join(' · ') : '今天还没打卡';
+  document.getElementById('inTime').textContent = r && r.start!=null ? '已打 '+fmtHM(r.start) : '';
+  document.getElementById('outTime').textContent = r && r.end!=null ? '已打 '+fmtHM(r.end) : '';
+  document.getElementById('punchIn').disabled = !!(r && r.start!=null);
+  document.getElementById('punchOut').disabled = !(r && r.start!=null) || !!(r && r.end!=null);
 
   if (!document.getElementById('fDate').value) document.getElementById('fDate').value = t;
 
-  const all = DATA.records.slice().sort((a, b) => b.date.localeCompare(a.date) || a.person.localeCompare(b.person));
+  const all = DATA.records.slice().sort((a,b) => b.date.localeCompare(a.date) || a.person.localeCompare(b.person));
   document.getElementById('recCount').textContent = `共 ${all.length} 条`;
-  document.getElementById('recList').innerHTML = all.slice(0, 60).map(r => `
+  document.getElementById('recList').innerHTML = all.slice(0,60).map(r => `
     <div class="rec-item">
-      <div class="who ${r.person === 'A' ? 'a' : 'b'}"></div>
-      <div class="date">${r.date}</div>
-      <div class="times">${c[r.person]} ${r.start != null ? fmtHM(r.start) : '--'} → ${r.end != null ? fmtHM(r.end) : '--'}</div>
+      <div class="ico">${r.person==='A'?'🫏':'🐮'}</div>
+      <div class="date">${mmdd(r.date)}<br>${wk(r.date)}</div>
+      <div class="times">${r.start!=null?fmtHM(r.start):'--'} → ${r.end!=null?fmtHM(r.end):'--'}</div>
       <div class="dur">${fmtDur(durMin(r))}</div>
       <div class="ops"><button onclick="editRec('${r.person}','${r.date}')">改</button><button onclick="delRec('${r.person}','${r.date}')">删</button></div>
     </div>`).join('') || '<div class="tip">暂无记录</div>';
 
   renderCmp();
   renderCharts();
+  renderGantt();
 }
 
-async function setupToken() {
-  return !!_tk();
-}
-
-// 屏幕旋转/尺寸变化时重算图表尺寸，避免布局错乱重叠
 let _rz;
 function resizeCharts() {
   clearTimeout(_rz);
   _rz = setTimeout(() => {
-    ['chartDaily', 'chartClock'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el && el.data) { try { Plotly.Plots.resize(el); } catch (e) {} }
-    });
+    const el = document.getElementById('chartDaily');
+    if (el && el.data) { try { Plotly.Plots.resize(el); } catch(e){} }
   }, 200);
 }
 window.addEventListener('resize', resizeCharts);
